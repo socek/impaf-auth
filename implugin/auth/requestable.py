@@ -1,9 +1,9 @@
-from impaf.requestable import Requestable
+from implugin.sqlalchemy.requestable import SqlalchemyRequestable
 
 from .models import NotLoggedUser
 
 
-class AuthRequestable(Requestable):
+class AuthRequestable(SqlalchemyRequestable):
     _not_logged_user_cls = NotLoggedUser
 
     def get_user(self):
@@ -16,4 +16,4 @@ class AuthRequestable(Requestable):
         if userid is None:
             return self._not_logged_user_cls()
         else:
-            self.Auth.get_by_id(userid)
+            return self.drivers.Auth.get_by_id(userid)

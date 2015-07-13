@@ -3,6 +3,7 @@ from setuptools import setup, find_packages
 
 install_requires = [
     'impaf',
+    'impaf-sqlalchemy',
 ]
 
 if __name__ == '__main__':

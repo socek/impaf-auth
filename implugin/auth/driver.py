@@ -1,6 +1,5 @@
 from sqlalchemy.orm.exc import NoResultFound
 
-from implugin.sqlalchemy.driver import DriverHolder
 from implugin.sqlalchemy.driver import ModelDriver
 
 from .models import User
@@ -31,7 +30,7 @@ class AuthDriver(ModelDriver):
         for perm in permissions:
             self.add_permission(obj, *perm)
 
-        self.db.add(obj)
+        self.database().add(obj)
         return obj
 
     def add_permission(self, user, group, name):
@@ -53,14 +52,5 @@ class AuthDriver(ModelDriver):
             )
         except NoResultFound:
             permission = self.permission_model(group=group, name=name)
-            self.db.add(permission)
+            self.database().add(permission)
             return permission
-
-
-
-
-class AuthDriverHolder(DriverHolder):
-
-    def generate_drivers(self):
-        super().generate_drivers()
-        self.Auth = self.feeded_driver(AuthDriver())

@@ -1,11 +1,6 @@
 from pyramid.authentication import AuthTktAuthenticationPolicy
 from pyramid.authorization import ACLAuthorizationPolicy
 
-# from implugin.beaker import BeakerApplication
-# from implugin.haml import HamlApplication
-# from implugin.sqlalchemy.application import SqlAlchemyApplication
-
-# from implugin.fanstatic import FanstaticApplication
 from impaf.application import Application
 
 

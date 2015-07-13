@@ -20,7 +20,7 @@ class BasePermission(AbstractConcreteBase, DeclarativeBase):
     group = Column(String)
 
     def __repr__(self):
-        data = super().__repr__()
+        data = self.__class__.__name__
         name = self.name or ''
         group = self.group or ''
         return '%s: %s:%s' % (data, name, group)
@@ -31,10 +31,7 @@ class BasePermission(AbstractConcreteBase, DeclarativeBase):
         return '%s:%s' % (group, name)
 
 
-class BaseUser(AbstractConcreteBase, DeclarativeBase):
-
-    __tablename__ = 'users'
-
+class BaseUser(object):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     email = Column(String, unique=True)
@@ -80,19 +77,22 @@ class BaseUser(AbstractConcreteBase, DeclarativeBase):
         hashed_pass.update((password + self.password[:40]).encode('utf8'))
         return self.password[40:] == hashed_pass.hexdigest()
 
-    def is_logged(self):
+    def is_authenticated(self):
         return True
 
     def __repr__(self):
-        data = super().__repr__()
+        data = self.__class__.__name__
         name = self.name or ''
         email = self.email or ''
         return '%s: %s (%s)' % (data, name, email)
 
 
 class NotLoggedUser(BaseUser):
-
-    name = 'FakeUser'
+    id = None
+    name = 'not logged user'
+    email = None
+    password = None
+    permissions = []
 
     def has_permission(self, group, name):
         return False
@@ -106,16 +106,17 @@ class NotLoggedUser(BaseUser):
     def validate_password(self, *args, **kwargs):
         raise NotImplementedError()
 
-    def is_logged(self):
+    def is_authenticated(self):
         return False
 
     def has_access_to_controller(self, ctrl):
         return getattr(ctrl, 'permissions', []) == []
 
 
-class User(BaseUser):
-    pass
-
-
 class Permission(BasePermission):
     pass
+
+
+class User(BaseUser, DeclarativeBase):
+    __tablename__ = 'users'
+    _permission_cls = Permission

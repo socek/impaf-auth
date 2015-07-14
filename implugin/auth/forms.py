@@ -1,8 +1,9 @@
+from pyramid.security import remember
+
 from formskit.formvalidators import FormValidator
 from formskit.validators import NotEmpty
 
-from haplugin.formskit import PostForm
-from hatak.unpackrequest import unpack
+from implugin.formskit.models import PostForm
 
 
 class EmailMustExists(FormValidator):
@@ -10,9 +11,8 @@ class EmailMustExists(FormValidator):
     message = "EmailMustExists"
 
     def validate(self):
-        unpack(self, self.form.request)
         email = self.form.get_value('email')
-        self.form._user = self.driver.Auth.get_by_email(email)
+        self.form._user = self.form.drivers.Auth.get_by_email(email)
         return self.form._user is not None
 
 
@@ -35,4 +35,5 @@ class LoginForm(PostForm):
         self.add_form_validator(PasswordMustMatch())
 
     def on_success(self):
-        self.session['user_id'] = self._user.id
+        headers = remember(self.request, str(self._user.id))
+        self.request.response.headers.extend(headers)

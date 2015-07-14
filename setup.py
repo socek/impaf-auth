@@ -4,6 +4,7 @@ from setuptools import setup, find_packages
 install_requires = [
     'impaf',
     'impaf-sqlalchemy',
+    'impaf-formskit',
 ]
 
 if __name__ == '__main__':

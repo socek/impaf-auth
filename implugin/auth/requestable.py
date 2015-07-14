@@ -1,6 +1,7 @@
 from implugin.sqlalchemy.requestable import SqlalchemyRequestable
 
 from .models import NotLoggedUser
+from .driver import AuthDriverHolder
 
 
 class AuthRequestable(SqlalchemyRequestable):
@@ -17,3 +18,6 @@ class AuthRequestable(SqlalchemyRequestable):
             return self._not_logged_user_cls()
         else:
             return self.drivers.Auth.get_by_id(userid)
+
+    def _get_driver_holder_cls(self):
+        return AuthDriverHolder

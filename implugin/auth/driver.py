@@ -1,6 +1,7 @@
 from sqlalchemy.orm.exc import NoResultFound
 
 from implugin.sqlalchemy.driver import ModelDriver
+from implugin.sqlalchemy.driver import DriverHolder
 
 from .models import User
 from .models import Permission
@@ -54,3 +55,10 @@ class AuthDriver(ModelDriver):
             permission = self.permission_model(group=group, name=name)
             self.database().add(permission)
             return permission
+
+
+class AuthDriverHolder(DriverHolder):
+
+    def generate_drivers(self):
+        super().generate_drivers()
+        self.Auth = self.feeded_driver(AuthDriver())

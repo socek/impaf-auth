@@ -5,6 +5,15 @@ from formskit.validators import NotEmpty
 
 from implugin.formskit.models import PostForm
 
+from .requestable import AuthRequestable
+
+
+class LoginMixing(AuthRequestable):
+
+    def _force_login(self, user_id):
+        headers = remember(self.request, str(user_id))
+        self.request.response.headers.extend(headers)
+
 
 class EmailMustExists(FormValidator):
 
@@ -16,24 +25,77 @@ class EmailMustExists(FormValidator):
         return self.form._user is not None
 
 
-class PasswordMustMatch(FormValidator):
+class EmailMustNotExists(EmailMustExists):
+    message = "EmailMustNotExists"
 
-    message = "PasswordMustMatch"
+    def validate(self):
+        return not super().validate()
+
+
+class ValidateUserPassword(FormValidator):
+
+    message = "ValidateUserPassword"
 
     def validate(self):
         data = self.form.get_data_dict(True)
         return self.form._user.validate_password(data['password'])
 
 
-class LoginForm(PostForm):
+class PasswordsMustMatch(FormValidator):
+
+    message = "PasswordsMustMatch"
+
+    def validate(self):
+        password = self.form.get_value('password')
+        confirm_password = self.form.get_value('confirm_password')
+        return password == confirm_password
+
+
+class LoginForm(PostForm, LoginMixing):
 
     def create_form(self):
         self.add_field('email', label='E-mail', validators=[NotEmpty()])
         self.add_field('password', label='Hasło', validators=[NotEmpty()])
 
         self.add_form_validator(EmailMustExists())
-        self.add_form_validator(PasswordMustMatch())
+        self.add_form_validator(ValidateUserPassword())
 
     def on_success(self):
-        headers = remember(self.request, str(self._user.id))
-        self.request.response.headers.extend(headers)
+        self._force_login(self._user.id)
+
+
+class RegisterForm(PostForm, LoginMixing):
+
+    def create_form(self):
+        self.add_field(
+            'name',
+            label='Imię',
+            validators=[NotEmpty()],
+        )
+        self.add_field(
+            'email',
+            label='E-mail',
+            validators=[NotEmpty()],
+        )
+        self.add_field(
+            'password',
+            label='Hasło',
+            validators=[NotEmpty()],
+        )
+        self.add_field(
+            'confirm_password',
+            label='Powtórz hasło',
+            validators=[NotEmpty()],
+        )
+
+        self.add_form_validator(EmailMustNotExists())
+        self.add_form_validator(PasswordsMustMatch())
+
+    def on_success(self):
+        user = self.drivers.Auth.create(
+            name=self.get_value('name'),
+            email=self.get_value('email'),
+            password=self.get_value('password'),
+        )
+        self.database().commit()
+        self._force_login(user.id)

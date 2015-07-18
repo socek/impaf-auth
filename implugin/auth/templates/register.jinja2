@@ -12,20 +12,19 @@
             <div class="col-md-4 col-md-offset-4">
                 <div class="login-panel panel panel-default">
                     <div class="panel-heading">
-                        <h3 class="panel-title">Proszę się zalogować</h3>
+                        <h3 class="panel-title">Proszę się zarejestrować</h3>
                     </div>
                     {{form.form_error()}}
                     <div class="panel-body">
                         {{form.begin()}}
                             <fieldset>
+                                {{form.text('name')}}
                                 {{form.text('email')}}
                                 {{form.password('password')}}
-                                {{form.submit('Zaloguj')}}
+                                {{form.password('confirm_password')}}
+                                {{form.submit('Zarejestruj')}}
                             </fieldset>
                         {{form.end()}}
-                        {% if auth['enable_register_link'] %}
-                            Nie masz konta? <a href="{{ route_path('auth:register') }}">Zarejestruj się</a>
-                        {% endif %}
                     </div>
                 </div>
             </div>

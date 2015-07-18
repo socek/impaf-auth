@@ -3,8 +3,9 @@ from pyramid.security import forget
 from implugin.formskit.controller import FormskitController
 
 from .forms import LoginForm
-from .widgets import LoginFormWidget
+from .forms import RegisterForm
 from .requestable import AuthRequestable
+from .widgets import LoginFormWidget
 
 
 class BaseAuthController(FormskitController, AuthRequestable):
@@ -28,21 +29,25 @@ class BaseAuthController(FormskitController, AuthRequestable):
 class LoginController(BaseAuthController):
 
     renderer = 'implugin.auth.controllers:templates/login.jinja2'
-    form_widget = LoginFormWidget
-    form = LoginForm
+    form_widget_cls = LoginFormWidget
+    form_cls = LoginForm
     permission = 'guest'
     header_text = 'Login'
+    enable_register_link = True
 
     def _create_context(self):
         super()._create_context()
         self.context['auth']['header'] = self.header_text
+        self.context['auth']['enable_register_link'] = (
+            self.enable_register_link
+        )
 
     def make(self):
         if self.get_user().is_authenticated():
             self.goto_home()
             return
 
-        form = self.add_form(self.form, widgetcls=self.form_widget)
+        form = self.add_form(self.form_cls, widgetcls=self.form_widget_cls)
         if form.validate():
             self.goto_home()
             return
@@ -63,10 +68,28 @@ class ForbiddenController(BaseAuthController):
             return
 
 
-class LogoutController(FormskitController, AuthRequestable):
+class LogoutController(BaseAuthController):
     permission = 'auth'
 
     def make(self):
         headers = forget(self.request)
         self.request.response.headerlist.extend(headers)
         self.goto_login()
+
+
+class RegisterController(BaseAuthController):
+    renderer = 'implugin.auth.controllers:templates/register.jinja2'
+    form_widget_cls = LoginFormWidget
+    form_cls = RegisterForm
+    permission = 'guest'
+    header_text = 'Register'
+
+    def _create_context(self):
+        super()._create_context()
+        self.context['auth']['header'] = self.header_text
+
+    def make(self):
+        form = self.add_form(self.form_cls, widgetcls=self.form_widget_cls)
+        if form.validate():
+            self.goto_home()
+            return

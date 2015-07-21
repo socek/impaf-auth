@@ -97,9 +97,6 @@ class NotLoggedUser(BaseUser):
     def has_permission(self, group, name):
         return False
 
-    def add_permission(self, *args, **kwargs):
-        raise NotImplementedError()
-
     def set_password(self, *args, **kwargs):
         raise NotImplementedError()
 

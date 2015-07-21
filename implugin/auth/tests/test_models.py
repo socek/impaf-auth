@@ -1,131 +1,156 @@
 from mock import MagicMock
 from mock import create_autospec
+from mock import patch
+
+from pytest import fixture
+from pytest import raises
+from pytest import yield_fixture
+
+from impaf.controller import Controller
+from impaf.testing import RequestFixture
 
 from ..models import User
 from ..models import Permission
+from ..models import NotLoggedUser
 
 
-class UserTestCase(ModelTestCase):
-    prefix_from = User
+class TestUser(RequestFixture):
 
-    def test_password(self):
+    @fixture
+    def testable(self):
+        return User()
+
+    def test_repr(self, testable):
+        testable.id = 10
+        testable.name = 'name'
+        testable.email = 'myemail@elo.com'
+        assert repr(testable) == 'User: name (myemail@elo.com)'
+
+    @yield_fixture
+    def mhas_permission(self, testable):
+        patcher = patch.object(testable, 'has_permission')
+        with patcher as mock:
+            yield mock
+
+    @yield_fixture
+    def mhas_access_to_controller(self, testable):
+        patcher = patch.object(testable, 'has_access_to_controller')
+        with patcher as mock:
+            yield mock
+
+    def test_password(self, testable):
         """Setted password should be validated. Wrong one should not."""
-        self.model.set_password('god')
+        testable.set_password('god')
 
-        self.assertEqual(True, self.model.validate_password('god'))
-        self.assertEqual(False, self.model.validate_password('god2'))
+        assert testable.validate_password('god') is True
+        assert testable.validate_password('god2') is False
 
-    def test_is_logged(self):
+    def test_is_authenticated(self, testable):
         """User should always be logged. Only FakeUser should not be logged."""
-        self.assertEqual(True, self.model.is_logged())
+        assert testable.is_authenticated() is True
 
-    def test_add_permission(self):
-        """add_permission should get or create Permission and assing it to User
-        """
-        self.add_mock('Permission')
-
-        self.model.add_permission(self.db, 'first', 'second')
-
-        self.mocks['Permission'].get_or_create.assert_called_once_with(
-            self.db,
-            group='first',
-            name='second')
-
-        self.assertEqual(
-            [self.mocks['Permission'].get_or_create.return_value],
-            self.model.permissions)
-
-    def test_has_permission_success(self):
+    def test_has_permission_success(self, testable):
         """has_permission should return True if permission is in user
         permissions"""
         permission = MagicMock()
         permission.name = 'name'
         permission.group = 'group'
-        self.model.permissions.append(permission)
-        self.assertEqual(True, self.model.has_permission('group', 'name'))
+        testable.permissions.append(permission)
+        assert testable.has_permission('group', 'name') is True
 
-    def test_has_permission_fail(self):
+    def test_has_permission_fail(self, testable):
         """has_permission should return False if permission is not in user
         permissions"""
-        self.assertEqual(False, self.model.has_permission('group', 'name'))
+        assert testable.has_permission('group', 'name') is False
 
         permission = MagicMock()
-        self.model.permissions.append(permission)
+        testable.permissions.append(permission)
         permission.name = 'bad name'
         permission.group = 'group'
-        self.assertEqual(False, self.model.has_permission('group', 'name'))
+        assert testable.has_permission('group', 'name') is False
 
-    def test_has_access_to_route(self):
+    def test_has_access_to_route(
+        self,
+        testable,
+        mhas_access_to_controller,
+        registry,
+    ):
         """has_access_to_route should find controller and use
         has_access_to_controller"""
-        self.add_mock_object(self.model, 'has_access_to_controller')
-        self.registry['route'] = MagicMock()
-        self.registry['route'].routes = {
+        registry['route'] = MagicMock()
+        registry['route'].routes = {
             'myroute': 'ctrl',
         }
-        self.model.registry = self.registry
+        testable.registry = registry
 
-        result = self.model.has_access_to_route('myroute')
+        result = testable.has_access_to_route('myroute')
 
-        self.assertEqual(
-            self.mocks['has_access_to_controller'].return_value, result)
-        self.mocks['has_access_to_controller'].assert_called_once_with('ctrl')
+        assert result == mhas_access_to_controller.return_value
+        mhas_access_to_controller.assert_called_once_with('ctrl')
 
-    def test_has_access_to_controller_success(self):
+    def test_has_access_to_controller_success(self, testable, mhas_permission):
         """has_access_to_controller should get permissions from ctrl, and
         return True if user has all permissions"""
         ctrl = MagicMock()
         ctrl.permissions = [('base', 'view')]
-        self.add_mock_object(self.model, 'has_permission')
-        self.mocks['has_permission'].return_value = True
+        mhas_permission.return_value = True
 
-        self.assertEqual(True, self.model.has_access_to_controller(ctrl))
+        assert testable.has_access_to_controller(ctrl) is True
 
-        self.mocks['has_permission'].assert_called_once_with('base', 'view')
+        mhas_permission.assert_called_once_with('base', 'view')
 
-    def test_has_access_to_controller_fail(self):
+    def test_has_access_to_controller_fail(self, testable, mhas_permission):
         """has_access_to_controller should get permissions from ctrl, and
         return False if user has not one of that permissions"""
         ctrl = MagicMock()
         ctrl.permissions = [('base', 'view')]
-        self.add_mock_object(self.model, 'has_permission')
-        self.mocks['has_permission'].return_value = False
+        mhas_permission.return_value = False
 
-        self.assertEqual(False, self.model.has_access_to_controller(ctrl))
+        assert testable.has_access_to_controller(ctrl) is False
 
-        self.mocks['has_permission'].assert_called_once_with('base', 'view')
+        mhas_permission.assert_called_once_with('base', 'view')
 
 
-class NotLoggedUserTestCase(ModelTestCase):
-    prefix_from = NotLoggedUser
+class TestNotLoggedUser(RequestFixture):
 
-    def test_has_permission(self):
+    @fixture
+    def testable(self, request):
+        return NotLoggedUser()
+
+    def test_has_permission(self, testable):
         """FakeUser should not have any permissions."""
-        self.assertEqual(False, self.model.has_permission('base', 'view'))
+        assert testable.has_permission('base', 'view') is False
 
-    def test_add_permission(self):
-        """FakeUser can not add permission."""
-        self.assertRaises(
-            NotImplementedError, self.model.add_permission, ('base', 'view'))
-
-    def test_set_password(self):
+    def test_set_password(self, testable):
         """FakeUser can not change his password."""
-        self.assertRaises(
-            NotImplementedError, self.model.set_password, ('password',))
+        with raises(NotImplementedError):
+            testable.set_password('password',)
 
-    def test_validate_password(self):
+    def test_validate_password(self, testable):
         """FakeUser can not check his password."""
-        self.assertRaises(
-            NotImplementedError, self.model.validate_password, ('password',))
+        with raises(NotImplementedError):
+            testable.validate_password('password',)
 
-    def test_is_logged(self):
+    def test_is_authenticated(self, testable):
         """FakeUser is not and can not be logged."""
-        self.assertEqual(False, self.model.is_logged())
+        assert testable.is_authenticated() is False
 
-    def test_has_access_to_controller(self):
+    def test_has_access_to_controller(self, testable):
         """FakeUser has access only to controllers without permissions."""
         ctrl = create_autospec(Controller)
-        self.assertEqual(True, self.model.has_access_to_controller(ctrl))
+        assert testable.has_access_to_controller(ctrl) is True
 
         ctrl.permissions = [1]
-        self.assertEqual(False, self.model.has_access_to_controller(ctrl))
+        assert testable.has_access_to_controller(ctrl) is False
+
+
+class TestPermission(RequestFixture):
+
+    @fixture
+    def testable(self):
+        return Permission()
+
+    def test_repr(self, testable):
+        testable.name = 'n1'
+        testable.group = 'g1'
+        assert repr(testable) == 'Permission: n1:g1'

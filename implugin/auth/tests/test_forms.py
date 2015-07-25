@@ -6,10 +6,13 @@ from formskit import Form
 from pytest import fixture
 from pytest import yield_fixture
 
+from implugin.formskit.testing import FormFixture
 from implugin.sqlalchemy.testing import SqlalchemyRequestFixture
 
 from ..forms import EmailMustExists
 from ..forms import EmailMustNotExists
+from ..forms import LoginForm
+from ..forms import RegisterForm
 from ..forms import LoginMixin
 from ..forms import PasswordsMustMatch
 from ..forms import ValidateUserPassword
@@ -148,3 +151,49 @@ class TestPasswordsMustMatch(FormValidatorFixtures):
         })
 
         assert not testable.validate()
+
+
+class TestLoginForm(FormFixture, SqlalchemyRequestFixture):
+    _testable_cls = LoginForm
+
+    @yield_fixture
+    def mforce_login(self, testable):
+        patcher = patch.object(testable, '_force_login')
+        with patcher as mock:
+            yield mock
+
+    def test_on_success(self, testable, mforce_login):
+        testable._user = MagicMock()
+        testable._user.id = sentinel.user_id
+
+        testable.on_success()
+
+        mforce_login.assert_called_once_with(sentinel.user_id)
+
+
+class TestRegisterForm(FormFixture, SqlalchemyRequestFixture):
+    _testable_cls = RegisterForm
+
+    @yield_fixture
+    def mforce_login(self, testable):
+        patcher = patch.object(testable, '_force_login')
+        with patcher as mock:
+            yield mock
+
+    def test_on_success(self, testable, mforce_login, mdrivers, mdatabase):
+        testable.parse_dict({
+            'name': 'myname',
+            'email': 'email@email.com',
+            'password': 'xxx',
+        })
+
+        testable.on_success()
+
+        mdrivers.Auth.create.assert_called_once_with(
+            name='myname',
+            email='email@email.com',
+            password='xxx',
+        )
+        mdatabase.return_value.commit.assert_called_once_with()
+        mdatabase.assert_called_once_with()
+        mforce_login(mdrivers.Auth.create.return_value.id)

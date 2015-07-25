@@ -41,7 +41,7 @@ class BaseUser(object):
     def permissions(cls):
         return relationship(
             cls._permission_cls,
-            secondary=users_2_permissions,
+            secondary=cls._users_2_permissions,
         )
 
     def has_permission(self, group, name):
@@ -117,3 +117,4 @@ class Permission(BasePermission):
 class User(BaseUser, DeclarativeBase):
     __tablename__ = 'users'
     _permission_cls = Permission
+    _users_2_permissions = users_2_permissions

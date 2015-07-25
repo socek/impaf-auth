@@ -8,7 +8,7 @@ from implugin.formskit.models import PostForm
 from .requestable import AuthRequestable
 
 
-class LoginMixing(AuthRequestable):
+class LoginMixin(AuthRequestable):
 
     def _force_login(self, user_id):
         headers = remember(self.request, str(user_id))
@@ -37,8 +37,8 @@ class ValidateUserPassword(FormValidator):
     message = "ValidateUserPassword"
 
     def validate(self):
-        data = self.form.get_data_dict(True)
-        return self.form._user.validate_password(data['password'])
+        password = self.form.get_value('password')
+        return self.form._user.validate_password(password)
 
 
 class PasswordsMustMatch(FormValidator):
@@ -51,7 +51,7 @@ class PasswordsMustMatch(FormValidator):
         return password == confirm_password
 
 
-class LoginForm(PostForm, LoginMixing):
+class LoginForm(PostForm, LoginMixin):
 
     def create_form(self):
         self.add_field('email', label='E-mail', validators=[NotEmpty()])
@@ -64,7 +64,7 @@ class LoginForm(PostForm, LoginMixing):
         self._force_login(self._user.id)
 
 
-class RegisterForm(PostForm, LoginMixing):
+class RegisterForm(PostForm, LoginMixin):
 
     def create_form(self):
         self.add_field(

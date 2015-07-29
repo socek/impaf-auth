@@ -14,6 +14,6 @@ class AuthApplication(Application):
             self.settings['auth_secret'],
             hashalg=self.settings.get('auth_hashalg', 'sha512'),
         )
-        data['authorization_policy'] = self._authorization_policy
+        data['authorization_policy'] = self._authorization_policy()
 
         return data

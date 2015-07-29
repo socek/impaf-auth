@@ -1,5 +1,5 @@
 from mock import patch
-from mock import sentinel
+from mock import MagicMock
 
 from pytest import fixture
 from pytest import yield_fixture
@@ -41,15 +41,17 @@ class TestAuthApplication(object):
         testable.settings = {
             'auth_secret': 'secret',
         }
-        testable._authorization_policy = sentinel.ACLAuthorizationPolicy
+        auth_policy = MagicMock()
+        testable._authorization_policy = auth_policy
 
         data = testable._get_config_kwargs()
 
         assert data == {
             'authentication_policy': mAuthTktAuthenticationPolicy.return_value,
-            'authorization_policy': sentinel.ACLAuthorizationPolicy,
+            'authorization_policy': auth_policy.return_value,
         }
         mAuthTktAuthenticationPolicy.assert_called_once_with(
             'secret',
             hashalg='sha512',
         )
+        auth_policy.assert_called_once_with()

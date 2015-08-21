@@ -59,6 +59,6 @@ class AuthDriver(ModelDriver):
 
 class AuthDriverHolder(DriverHolder):
 
-    def generate_drivers(self):
-        super().generate_drivers()
-        self.Auth = self.feeded_driver(AuthDriver())
+    @property
+    def Auth(self):
+        return self.feeded_driver(AuthDriver())

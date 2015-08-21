@@ -6,6 +6,7 @@ from .driver import AuthDriverHolder
 
 class AuthRequestable(SqlalchemyRequestable):
     _not_logged_user_cls = NotLoggedUser
+    DRIVER_HOLDER_CLS = AuthDriverHolder
 
     def get_user(self):
         if not getattr(self, '_user', None):
@@ -18,6 +19,3 @@ class AuthRequestable(SqlalchemyRequestable):
             return self._not_logged_user_cls()
         else:
             return self.drivers.Auth.get_by_id(userid)
-
-    def _get_driver_holder_cls(self):
-        return AuthDriverHolder

@@ -1,8 +1,12 @@
+from mock import MagicMock
+from mock import patch
 from pytest import fixture
+from pytest import yield_fixture
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from ..driver import AuthDriver
+from ..driver import AuthDriverHolder
 
 
 class DriverFixture(object):
@@ -80,3 +84,26 @@ class TestAuthDriver(DriverFixture):
 
         # sanity check, this should not raise an error
         testable.remove_permission(obj, 'group', 'name2')
+
+
+class TestAuthDriverHolder(object):
+    _testable_cls = AuthDriverHolder
+
+    @fixture
+    def testable(self):
+        return self._testable_cls(MagicMock())
+
+    @yield_fixture
+    def mfeeded_driver(self, testable):
+        with patch.object(testable, 'feeded_driver') as mock:
+            yield mock
+
+    @yield_fixture
+    def mauth_driver(self):
+        with patch('implugin.auth.driver.AuthDriver') as mock:
+            yield mock
+
+    def test_auth(self, testable, mfeeded_driver, mauth_driver):
+        assert testable.Auth == mfeeded_driver.return_value
+        mfeeded_driver.assert_called_once_with(mauth_driver.return_value)
+        mauth_driver.assert_called_once_with()

@@ -18,4 +18,4 @@ class AuthRequestable(SqlalchemyRequestable):
         if userid is None:
             return self._not_logged_user_cls()
         else:
-            return self.drivers.Auth.get_by_id(userid)
+            return self.drivers.auth.get_by_id(userid)

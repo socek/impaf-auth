@@ -21,7 +21,7 @@ class EmailMustExists(FormValidator):
 
     def validate(self):
         email = self.form.get_value('email')
-        self.form._user = self.form.drivers.Auth.get_by_email(email)
+        self.form._user = self.form.drivers.auth.get_by_email(email)
         return self.form._user is not None
 
 
@@ -92,7 +92,7 @@ class RegisterForm(PostForm, LoginMixin):
         self.add_form_validator(PasswordsMustMatch())
 
     def on_success(self):
-        user = self.drivers.Auth.create(
+        user = self.drivers.auth.create(
             name=self.get_value('name'),
             email=self.get_value('email'),
             password=self.get_value('password'),

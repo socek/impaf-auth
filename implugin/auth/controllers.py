@@ -43,7 +43,7 @@ class LoginController(BaseAuthController):
         )
 
     def make(self):
-        if self.get_user().is_authenticated():
+        if self.get_user().is_authenticated:
             self.goto_home()
             return
 
@@ -63,7 +63,7 @@ class ForbiddenController(BaseAuthController):
         self.context['auth']['header'] = self.header_text
 
     def make(self):
-        if not self.get_user().is_authenticated():
+        if not self.get_user().is_authenticated:
             self.goto_login()
             return
 
